@@ -37,6 +37,16 @@ public class MainActivity extends AppCompatActivity {
         mEmailText = findViewById(R.id.input_email);
         mPasswordText = findViewById(R.id.input_password);
         mLoginButton = findViewById(R.id.button_login);
+        mLoginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    MainActivity.loginAidl.login(mEmailText.getText().toString(), mPasswordText.getText().toString());
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         mSignupLink = findViewById(R.id.link_signup);
         mSignupLink.setOnClickListener(new View.OnClickListener() {

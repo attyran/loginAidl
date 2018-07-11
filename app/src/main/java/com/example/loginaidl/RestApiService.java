@@ -53,11 +53,40 @@ public class RestApiService extends Service {
                 }
             });
         }
+
+        @Override
+        public void login(String username, String password) throws RemoteException {
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(REST_API_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+            LoginApi api = retrofit.create(LoginApi.class);
+
+            Call<LoginResponse> call = api.login(new CreateBody(username, password));
+            call.enqueue(new Callback<LoginResponse>() {
+                @Override
+                public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
+                    Log.d(TAG, "login onResponse ");
+
+                    if (response.isSuccessful()) {
+                    } else {
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<LoginResponse> call, Throwable t) {
+                    Log.e(TAG, "login query failed!");
+                }
+            });
+        }
     };
 
     public interface LoginApi {
         @POST("/users")
         Call<User> create(@Body CreateBody loginInfo);
+
+        @POST("/auth")
+        Call<LoginResponse> login(@Body CreateBody loginInfo);
     }
 
     private class CreateBody {
