@@ -1,9 +1,12 @@
 package com.example.loginaidl;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.ServiceConnection;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Message;
 import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -31,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
     }
 
+    @SuppressLint("HandlerLeak")
     @Override
     public void onStart() {
         super.onStart();
@@ -69,34 +73,34 @@ public class MainActivity extends AppCompatActivity {
         unbindService(connection);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_SIGNUP) {
-            if (resultCode == RESULT_OK) {
-                // todo implement post signup logic
-                this.finish();
-            }
-        }
-    }
-
-    public void createAccount(String username, String password) {
-        try {
-            loginAidl.createAccount(username, password);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-    }
-
     private ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(TAG, "onServiceConnected");
             loginAidl = ILoginInterface.Stub.asInterface(service);
+            try {
+                loginAidl.registerCallback(mCallback);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
         }
         @Override
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "onServiceDisconnected");
             loginAidl = null;
+        }
+    };
+
+    private ILoginInterfaceCallback mCallback = new ILoginInterfaceCallback.Stub() {
+        public void onResult(int callType, String response) {
+            if (callType == RestApiService.ACTION_LOGIN) {
+                if (response.equals("success")) {
+                    Log.d(TAG, "successful response");
+
+                    Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                    startActivity(intent);
+                }
+            }
         }
     };
 }

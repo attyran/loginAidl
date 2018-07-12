@@ -19,7 +19,7 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_signup);
+        setContentView(R.layout.activity_loggedin);
 
         mAgeText = findViewById(R.id.input_age);
         mHeightText = findViewById(R.id.input_height);
@@ -27,7 +27,11 @@ public class LoginActivity extends AppCompatActivity {
         mFetchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                try {
+                    MainActivity.loginAidl.fetch();
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
         });
 

@@ -15,6 +15,8 @@ public class User {
     @SerializedName("height")
     public String height;
 
+    public String token;
+
     public User(String id, String username, String age, String height) {
         this.id = id;
         this.username = username;
