@@ -10,7 +10,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
-public class SignupActivity extends AppCompatActivity implements RestApiReceiver.Listener {
+import static com.example.loginaidl.MainActivity.loginAidl;
+
+public class SignupActivity extends AppCompatActivity {
     private static final String TAG = "SignupActivity";
 
     private EditText mEmailText;
@@ -31,19 +33,31 @@ public class SignupActivity extends AppCompatActivity implements RestApiReceiver
                 createAccount();
             }
         });
-    }
 
-    private void createAccount() {
-        Log.d(TAG, "createAccount");
         try {
-            MainActivity.loginAidl.createAccount(mEmailText.getText().toString(), mPasswordText.getText().toString());
+            loginAidl.registerCallback(mCallback);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
 
-    @Override
-    public void onReceiveResult(int resultCode, Bundle resultData) {
-        Log.d(TAG, "onReceiveResult");
+    private void createAccount() {
+        Log.d(TAG, "createAccount");
+        try {
+            loginAidl.createAccount(mEmailText.getText().toString(), mPasswordText.getText().toString());
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
+
+    private ILoginInterfaceCallback mCallback = new ILoginInterfaceCallback.Stub() {
+        public void onResult(int callType, String response) {
+            if (callType == RestApiService.ACTION_CREATE) {
+                if (response.equals("success")) {
+                    Log.d(TAG, "successful response");
+                    finish();
+                }
+            }
+        }
+    };
 }

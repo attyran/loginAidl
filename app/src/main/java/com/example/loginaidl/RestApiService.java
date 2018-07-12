@@ -3,6 +3,7 @@ package com.example.loginaidl;
 import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.app.Service;
+import android.arch.persistence.room.Room;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,10 +24,15 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Headers;
 import retrofit2.http.POST;
+import retrofit2.http.Path;
 
 public class RestApiService extends Service {
     public static final int ACTION_LOGIN = 0;
+    public static final int ACTION_CREATE = 1;
+    public static final int ACTION_FETCH = 2;
+    public static final int ACTION_UPDATE = 3;
 
     private static final String REST_API_URL = "https://mirror-android-test.herokuapp.com";
     private static final String TAG = "IntentService";
@@ -40,7 +46,7 @@ public class RestApiService extends Service {
 
     private final ILoginInterface.Stub binder = new ILoginInterface.Stub() {
         @Override
-        public void createAccount(String username, String password) throws RemoteException {
+        public void createAccount(final String username, final String password) throws RemoteException {
             Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl(REST_API_URL)
                     .addConverterFactory(GsonConverterFactory.create())
@@ -52,10 +58,30 @@ public class RestApiService extends Service {
                 @Override
                 public void onResponse(Call<User> call, Response<User> response) {
                     Log.d(TAG, "onResponse");
+                    User userResponse = response.body();
 
                     if (response.isSuccessful()) {
-                        mUser = response.body();
+//                        mUser = response.body();
+                        UserDB user = new UserDB();
+                        user.setUsername(userResponse.getUsername());
+                        user.setUid(Integer.valueOf(userResponse.getId()));
+                        AppDatabase db = AppDatabase.getAppDatabase(getApplicationContext());
+                        db.userDao().insertAll(user);
+
+                        try {
+                            Message message = new Message();
+                            message.what = ACTION_CREATE;
+                            Bundle data = new Bundle();
+                            data.putString("response", "success");
+                            message.setData(data);
+                            mHandler.sendMessage(message);
+
+                            login(username, password);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                        }
                     } else {
+                        Log.e(TAG, "create unsuccessful " + response.errorBody().toString());
                     }
                 }
 
@@ -82,18 +108,27 @@ public class RestApiService extends Service {
                     LoginResponse loginResponse = response.body();
 
                     if (response.isSuccessful() && loginResponse != null) {
-                        if (mUser == null) {
-                            mUser = new User();
-                            mUser.username = username;
-                        }
-                        mUser.token = loginResponse.access_token;
+//                        if (mUser == null) {
+//                            mUser = new User();
+//                            mUser.username = username;
+//                        }
+//                        mUser.token = loginResponse.access_token;
 
-                        Message message = new Message();
-                        message.what = ACTION_LOGIN;
-                        Bundle data = new Bundle();
-                        data.putString("response", "success");
-                        message.setData(data);
-                        mHandler.sendMessage(message);
+                        AppDatabase db = AppDatabase.getAppDatabase(getApplicationContext());
+                        UserDB userdb = db.userDao().find(username);
+                        userdb.setToken(loginResponse.access_token);
+                        db.userDao().update(userdb);
+
+                        UserDB test = db.userDao().find(username);
+
+                        if (userdb != null) {
+                            Message message = new Message();
+                            message.what = ACTION_LOGIN;
+                            Bundle data = new Bundle();
+                            data.putString("response", "success");
+                            message.setData(data);
+                            mHandler.sendMessage(message);
+                        }
                     } else {
                         Log.e(TAG, "login error response!");
                     }
@@ -114,7 +149,7 @@ public class RestApiService extends Service {
                         .addConverterFactory(GsonConverterFactory.create())
                         .build();
                 LoginApi api = retrofit.create(LoginApi.class);
-                Call<ResponseBody> call = api.fetch(new FetchBody(mUser.username, mUser.token));
+                Call<ResponseBody> call = api.fetch("JWT " + mUser.token, "test");
                 call.enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -147,7 +182,10 @@ public class RestApiService extends Service {
                 try {
                     switch (msg.what) {
                         case ACTION_LOGIN:
-                            mCallbacks.getBroadcastItem(i).onResult( ACTION_LOGIN, msg.getData().getString("response"));
+                            mCallbacks.getBroadcastItem(i).onResult(ACTION_LOGIN, msg.getData().getString("response"));
+                            break;
+                        case ACTION_CREATE:
+                            mCallbacks.getBroadcastItem(i).onResult(ACTION_CREATE, msg.getData().getString("response"));
                             break;
                         default:
                             super.handleMessage(msg);
@@ -168,8 +206,8 @@ public class RestApiService extends Service {
         @POST("/auth")
         Call<LoginResponse> login(@Body CreateBody loginInfo);
 
-        @GET("/fetch")
-        Call<ResponseBody> fetch(@Header FetchBody fetchInfo);
+        @GET("/users/{id}")
+        Call<ResponseBody> fetch(@Header("Authorization") String jwt, @Path("id") String id);
     }
 
     private class CreateBody {
@@ -179,16 +217,6 @@ public class RestApiService extends Service {
         private CreateBody(String username, String password) {
             this.username = username;
             this.password = password;
-        }
-    }
-
-    private class FetchBody {
-        final String username;
-        final String token;
-
-        private FetchBody(String username, String token) {
-            this.username = username;
-            this.token = token;
         }
     }
 }

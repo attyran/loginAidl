@@ -65,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(this, RestApiService.class);
             bindService(intent, connection, Context.BIND_AUTO_CREATE);
         }
+
+        AppDatabase.getAppDatabase(this);
     }
 
     @Override
