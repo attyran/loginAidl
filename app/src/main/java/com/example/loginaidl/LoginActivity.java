@@ -1,8 +1,6 @@
 package com.example.loginaidl;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -30,11 +28,7 @@ public class LoginActivity extends AppCompatActivity {
         mFetchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-                    MainActivity.loginAidl.fetch();
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
+                LoginManager.Instance(getApplicationContext()).fetch();
             }
         });
 
@@ -42,11 +36,7 @@ public class LoginActivity extends AppCompatActivity {
         mUpdateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-                    MainActivity.loginAidl.update(Integer.valueOf(mAgeText.getText().toString()), Integer.valueOf(mHeightText.getText().toString()));
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
+                LoginManager.Instance(getApplicationContext()).update(Integer.valueOf(mAgeText.getText().toString()), Integer.valueOf(mHeightText.getText().toString()));
             }
         });
 
@@ -58,11 +48,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        try {
-            MainActivity.loginAidl.registerCallback(mCallback);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+        LoginManager.Instance(this).registerCallback(mCallback);
     }
 
     private ILoginInterfaceCallback mCallback = new ILoginInterfaceCallback.Stub() {

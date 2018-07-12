@@ -1,9 +1,7 @@
 package com.example.loginaidl;
 
 import android.annotation.SuppressLint;
-import android.app.IntentService;
 import android.app.Service;
-import android.arch.persistence.room.Room;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,9 +11,6 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.util.Log;
 
-import java.util.HashMap;
-
-import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -24,7 +19,6 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
-import retrofit2.http.Headers;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
@@ -62,7 +56,6 @@ public class RestApiService extends Service {
                     User userResponse = response.body();
 
                     if (response.isSuccessful()) {
-//                        mUser = response.body();
                         UserDB user = new UserDB();
                         user.setUsername(userResponse.getUsername());
                         user.setUid(Integer.valueOf(userResponse.getId()));
@@ -115,12 +108,6 @@ public class RestApiService extends Service {
                     LoginResponse loginResponse = response.body();
 
                     if (response.isSuccessful() && loginResponse != null) {
-//                        if (mUser == null) {
-//                            mUser = new User();
-//                            mUser.username = username;
-//                        }
-//                        mUser.token = loginResponse.access_token;
-
                         AppDatabase db = AppDatabase.getAppDatabase(getApplicationContext());
                         UserDB userdb = db.userDao().find(username);
                         userdb.setToken(loginResponse.access_token);
@@ -171,7 +158,7 @@ public class RestApiService extends Service {
                         Bundle data = new Bundle();
 
                         if (response.isSuccessful()) {
-                            Log.e(TAG, "login fetch success");
+                            Log.d(TAG, "login fetch success");
                             User user = response.body();
 
                             data.putString("response", "success");
