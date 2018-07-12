@@ -1,5 +1,6 @@
 package com.example.loginaidl;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
@@ -41,6 +42,24 @@ public class LoginActivity extends AppCompatActivity {
             public void onClick(View v) {
             }
         });
+
+        try {
+            MainActivity.loginAidl.registerCallback(mCallback);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
+    private ILoginInterfaceCallback mCallback = new ILoginInterfaceCallback.Stub() {
+        public void onResult(int callType, String response, String[] values) {
+            if (callType == RestApiService.ACTION_FETCH) {
+                if (response.equals("success")) {
+                    Log.d(TAG, "successful fetch");
+
+                    mAgeText.setText(values[0]);
+                    mHeightText.setText(values[1]);
+                }
+            }
+        }
+    };
 }

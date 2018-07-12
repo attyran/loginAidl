@@ -36,7 +36,7 @@ public class RestApiService extends Service {
 
     private static final String REST_API_URL = "https://mirror-android-test.herokuapp.com";
     private static final String TAG = "IntentService";
-    private User mUser = null;
+    private UserDB curUser = null;
     final RemoteCallbackList<ILoginInterfaceCallback> mCallbacks = new RemoteCallbackList<ILoginInterfaceCallback>();
 
     @Override
@@ -119,16 +119,14 @@ public class RestApiService extends Service {
                         userdb.setToken(loginResponse.access_token);
                         db.userDao().update(userdb);
 
-                        UserDB test = db.userDao().find(username);
+                        curUser = userdb;
 
-                        if (userdb != null) {
-                            Message message = new Message();
-                            message.what = ACTION_LOGIN;
-                            Bundle data = new Bundle();
-                            data.putString("response", "success");
-                            message.setData(data);
-                            mHandler.sendMessage(message);
-                        }
+                        Message message = new Message();
+                        message.what = ACTION_LOGIN;
+                        Bundle data = new Bundle();
+                        data.putString("response", "success");
+                        message.setData(data);
+                        mHandler.sendMessage(message);
                     } else {
                         Log.e(TAG, "login error response!");
                     }
@@ -143,21 +141,37 @@ public class RestApiService extends Service {
 
         @Override
         public void fetch() {
-            if (!mUser.token.isEmpty()) {
+            if (!curUser.getToken().isEmpty()) {
                 Retrofit retrofit = new Retrofit.Builder()
                         .baseUrl(REST_API_URL)
                         .addConverterFactory(GsonConverterFactory.create())
                         .build();
                 LoginApi api = retrofit.create(LoginApi.class);
-                Call<ResponseBody> call = api.fetch("JWT " + mUser.token, "test");
-                call.enqueue(new Callback<ResponseBody>() {
+                Call<User> call = api.fetch("JWT " + curUser.getToken(), String.valueOf(curUser.getUid()));
+                call.enqueue(new Callback<User>() {
                     @Override
-                    public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-                        Log.e(TAG, "login fetch success");
+                    public void onResponse(Call<User> call, Response<User> response) {
+                        Message message = new Message();
+                        message.what = ACTION_FETCH;
+                        Bundle data = new Bundle();
+
+                        if (response.isSuccessful()) {
+                            Log.e(TAG, "login fetch success");
+                            User user = response.body();
+
+                            data.putString("response", "success");
+                            data.putStringArray("values", new String[] {user.getAge(), user.getHeight()});
+                            message.setData(data);
+                            mHandler.sendMessage(message);
+                        } else {
+                            data.putString("response", "failure");
+                            message.setData(data);
+                            mHandler.sendMessage(message);
+                        }
                     }
 
                     @Override
-                    public void onFailure(Call<ResponseBody> call, Throwable t) {
+                    public void onFailure(Call<User> call, Throwable t) {
                         Log.e(TAG, "login fetch failed!");
                     }
                 });
@@ -182,10 +196,13 @@ public class RestApiService extends Service {
                 try {
                     switch (msg.what) {
                         case ACTION_LOGIN:
-                            mCallbacks.getBroadcastItem(i).onResult(ACTION_LOGIN, msg.getData().getString("response"));
+                            mCallbacks.getBroadcastItem(i).onResult(ACTION_LOGIN, msg.getData().getString("response"), null);
                             break;
                         case ACTION_CREATE:
-                            mCallbacks.getBroadcastItem(i).onResult(ACTION_CREATE, msg.getData().getString("response"));
+                            mCallbacks.getBroadcastItem(i).onResult(ACTION_CREATE, msg.getData().getString("response"), null);
+                            break;
+                        case ACTION_FETCH:
+                            mCallbacks.getBroadcastItem(i).onResult(ACTION_FETCH, msg.getData().getString("response"), msg.getData().getStringArray("values"));
                             break;
                         default:
                             super.handleMessage(msg);
@@ -207,7 +224,7 @@ public class RestApiService extends Service {
         Call<LoginResponse> login(@Body CreateBody loginInfo);
 
         @GET("/users/{id}")
-        Call<ResponseBody> fetch(@Header("Authorization") String jwt, @Path("id") String id);
+        Call<User> fetch(@Header("Authorization") String jwt, @Path("id") String id);
     }
 
     private class CreateBody {

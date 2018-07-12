@@ -51,7 +51,7 @@ public class SignupActivity extends AppCompatActivity {
     }
 
     private ILoginInterfaceCallback mCallback = new ILoginInterfaceCallback.Stub() {
-        public void onResult(int callType, String response) {
+        public void onResult(int callType, String response, String[] values) {
             if (callType == RestApiService.ACTION_CREATE) {
                 if (response.equals("success")) {
                     Log.d(TAG, "successful response");

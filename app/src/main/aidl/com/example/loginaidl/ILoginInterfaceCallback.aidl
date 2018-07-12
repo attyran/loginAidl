@@ -1,5 +1,5 @@
 package com.example.loginaidl;
 
 interface ILoginInterfaceCallback {
-    void onResult(int callType, String response);
+    void onResult(int callType, String response, in String[] values);
 }

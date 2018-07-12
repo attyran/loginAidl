@@ -17,6 +17,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int REQUEST_SIGNUP = 0;
@@ -94,10 +96,10 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private ILoginInterfaceCallback mCallback = new ILoginInterfaceCallback.Stub() {
-        public void onResult(int callType, String response) {
+        public void onResult(int callType, String response, String[] values) {
             if (callType == RestApiService.ACTION_LOGIN) {
                 if (response.equals("success")) {
-                    Log.d(TAG, "successful response");
+                    Log.d(TAG, "successful login");
 
                     Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
                     startActivity(intent);
