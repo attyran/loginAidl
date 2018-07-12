@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 public class LoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
@@ -40,6 +41,11 @@ public class LoginActivity extends AppCompatActivity {
         mUpdateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                try {
+                    MainActivity.loginAidl.update(Integer.valueOf(mAgeText.getText().toString()), Integer.valueOf(mHeightText.getText().toString()));
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -58,6 +64,17 @@ public class LoginActivity extends AppCompatActivity {
 
                     mAgeText.setText(values[0]);
                     mHeightText.setText(values[1]);
+
+                    Toast.makeText(getApplicationContext(), "Fetch successful", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Fetch unsuccessful", Toast.LENGTH_SHORT).show();
+                }
+            } else if (callType == RestApiService.ACTION_UPDATE) {
+                if (response.equals("success")) {
+                    Log.d(TAG, "successful update");
+                    Toast.makeText(getApplicationContext(), "Patch successful", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Patch unsuccessful", Toast.LENGTH_SHORT).show();
                 }
             }
         }

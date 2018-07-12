@@ -25,6 +25,7 @@ import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.Headers;
+import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
 
@@ -82,6 +83,12 @@ public class RestApiService extends Service {
                         }
                     } else {
                         Log.e(TAG, "create unsuccessful " + response.errorBody().toString());
+                        Message message = new Message();
+                        message.what = ACTION_CREATE;
+                        Bundle data = new Bundle();
+                        data.putString("response", "failure");
+                        message.setData(data);
+                        mHandler.sendMessage(message);
                     }
                 }
 
@@ -127,8 +134,16 @@ public class RestApiService extends Service {
                         data.putString("response", "success");
                         message.setData(data);
                         mHandler.sendMessage(message);
+
+                        fetch();
                     } else {
                         Log.e(TAG, "login error response!");
+                        Message message = new Message();
+                        message.what = ACTION_LOGIN;
+                        Bundle data = new Bundle();
+                        data.putString("response", "failure");
+                        message.setData(data);
+                        mHandler.sendMessage(message);
                     }
                 }
 
@@ -173,12 +188,61 @@ public class RestApiService extends Service {
                     @Override
                     public void onFailure(Call<User> call, Throwable t) {
                         Log.e(TAG, "login fetch failed!");
+
+                        Message message = new Message();
+                        message.what = ACTION_FETCH;
+                        Bundle data = new Bundle();
+                        data.putString("response", "failure");
+                        message.setData(data);
+                        mHandler.sendMessage(message);
                     }
                 });
-
             } else {
                 Log.e(TAG, "empty token, can't fetch!");
             }
+        }
+
+        @Override
+        public void update(int age, int height) {
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl(REST_API_URL)
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+            LoginApi api = retrofit.create(LoginApi.class);
+            Call<User> call = api.update(new PatchBody(age, height),"JWT " + curUser.getToken(), String.valueOf(curUser.getUid()));
+            call.enqueue(new Callback<User>() {
+                @Override
+                public void onResponse(Call<User> call, Response<User> response) {
+                    Message message = new Message();
+                    message.what = ACTION_UPDATE;
+                    Bundle data = new Bundle();
+
+                    if (response.isSuccessful()) {
+                        Log.d(TAG, "login update success");
+                        User user = response.body();
+//
+                        data.putString("response", "success");
+                        message.setData(data);
+                        mHandler.sendMessage(message);
+                    } else {
+                        data.putString("response", "failure");
+                        message.setData(data);
+                        mHandler.sendMessage(message);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<User> call, Throwable t) {
+                    Log.e(TAG, "login fetch failed!");
+
+                    Message message = new Message();
+                    message.what = ACTION_UPDATE;
+                    Bundle data = new Bundle();
+                    data.putString("response", "failure");
+                    message.setData(data);
+                    mHandler.sendMessage(message);
+                }
+            });
         }
 
         @Override
@@ -204,6 +268,9 @@ public class RestApiService extends Service {
                         case ACTION_FETCH:
                             mCallbacks.getBroadcastItem(i).onResult(ACTION_FETCH, msg.getData().getString("response"), msg.getData().getStringArray("values"));
                             break;
+                        case ACTION_UPDATE:
+                            mCallbacks.getBroadcastItem(i).onResult(ACTION_UPDATE, msg.getData().getString("response"), null);
+                            break;
                         default:
                             super.handleMessage(msg);
                             return;
@@ -225,6 +292,9 @@ public class RestApiService extends Service {
 
         @GET("/users/{id}")
         Call<User> fetch(@Header("Authorization") String jwt, @Path("id") String id);
+
+        @PATCH("/users/{id}")
+        Call<User> update(@Body PatchBody patchBody, @Header("Authorization") String jwt, @Path("id") String id);
     }
 
     private class CreateBody {
@@ -234,6 +304,16 @@ public class RestApiService extends Service {
         private CreateBody(String username, String password) {
             this.username = username;
             this.password = password;
+        }
+    }
+
+    private class PatchBody {
+        final int age;
+        final int height;
+
+        private PatchBody(int age, int height) {
+            this.age = age;
+            this.height = height;
         }
     }
 }
