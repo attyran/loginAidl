@@ -17,6 +17,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText mHeightText;
     private Button mFetchButton;
     private Button mUpdateButton;
+    private Button mLogoutButton;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -46,6 +47,14 @@ public class LoginActivity extends AppCompatActivity {
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }
+            }
+        });
+
+        mLogoutButton = findViewById(R.id.button_logout);
+        mLogoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
             }
         });
 

@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import static com.example.loginaidl.MainActivity.loginAidl;
 
@@ -56,6 +57,8 @@ public class SignupActivity extends AppCompatActivity {
                 if (response.equals("success")) {
                     Log.d(TAG, "successful response");
                     finish();
+                } else {
+                    Toast.makeText(getApplicationContext(), "Create unsuccessful", Toast.LENGTH_SHORT).show();
                 }
             }
         }
